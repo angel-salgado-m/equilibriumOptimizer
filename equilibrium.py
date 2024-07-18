@@ -1,8 +1,14 @@
 import random
 import numpy as np
+import pandas as pd
+import scipy.special
+import matplotlib.pyplot as plt
+from rich.console import Console
+from rich.table import Table
 
 class Problema:
   def __init__(self):
+    self.epsilon = 5000
     self.dimensiones = 5
     self.limites = {
       'x1': (0, 15),
@@ -42,29 +48,70 @@ class Problema:
       if not (c_min <= x[i] <= c_max):
         return False
 
+    # Chequeo de epsilon-constraint
+    totalCosto = 170 * x[0] + 310 * x[1] + 60 * x[2] + 101 * x[3] + 11 * x[4]
+    if totalCosto > self.epsilon:
+      return False
+
     return True
+  
+  def checkCostos(self, x):
+    totalCosto = 170 * x[0] + 310 * x[1] + 60 * x[2] + 101 * x[3] + 11 * x[4]
+    return totalCosto
+  
+  def checkQuality(self, x):
+     totalQuality = 70 * x[0] + 91 * x[1] + 50 * x[2] + 61 * x[3] + 21 * x[4]
+     return totalQuality
 
   def eval(self, x):
-    # Se evalua el fitness uti
-        return 70 * x[0] + 91 * x[1] + 50 * x[2] + 61 * x[3] + 21 * x[4]
+
+    # Se evalua el fitness utilizando la nueva funcion
+    #return self.scalarazing(x)
+
+    # Se evalua el fitness
+    return 70 * x[0] + 91 * x[1] + 50 * x[2] + 61 * x[3] + 21 * x[4]
   
-  def sigmoideDim(self, x):
-    a = 1 / (1 + np.exp(-8*x + 4))
-    if a > 0.5:
-        a = 1
-    else:
-        a = 0
-    return a
 
-  def sigmoideP(self, arr):
-      result = np.zeros(self.dimensiones)
-      for n in arr:
-        aux = n - int(n)
-        s = self.sigmoideDim(aux)
-        n = int(n) + s
-        result = np.append(result, n)
-      return result
-
+  def sigmoide(self, x, alpha, x0):
+    return 1/(1+np.exp(-alpha*(x-x0)))
+  
+  def find_y_interval(self, y, intervals):
+    interval_width = 1 / intervals
+    for i in range(intervals):
+        if i * interval_width <= y < (i + 1) * interval_width:
+            return i
+    return intervals - 1 if y == 1 else None
+  
+  def master_sigmoide(self, arreglo):
+    parameters = [
+      (0.6, 7.5, 16),    
+      (1, 5, 11),        
+      (0.35, 12.5, 26),  
+      (2.5, 2, 5),       
+      (0.3, 15, 31)      
+    ]
+    
+    results_list = []  # Use a Python list for appending
+    for x, (alpha, x0, intervals) in zip(arreglo, parameters):
+        y = self.sigmoide(x, alpha, x0)
+        if intervals == 5: 
+            if 0 <= y < 0.2:
+                results_list.append(0)
+            elif 0.2 <= y < 0.4:
+                results_list.append(1)
+            elif 0.4 <= y < 0.6:
+                results_list.append(2)
+            elif 0.6 <= y < 0.8:
+                results_list.append(3)
+            elif 0.8 <= y <= 1:
+                results_list.append(4)
+            else:
+                results_list.append(None)
+        else:
+            results_list.append(self.find_y_interval(y, intervals))
+    
+    return np.array(results_list)  # Convert the list to a NumPy array before returning
+  
 
 class Particula:
   def __init__(self, problema):
@@ -105,50 +152,52 @@ class EquilibriumOptimizer2:
         self.GP = GP
         self.V = 1
         self.enjambre = []
-        self.eq_candidatos = [Particula(problema) for _ in range(n)]
+        self.eq_candidatos = [Particula(problema) for _ in range(4)]
 
         self.lower_band = [ self.problema.limites[f"x{i+1}"][0] for i in range( len( self.problema.limites.keys() ) ) ]
         self.upper_band = [ self.problema.limites[f"x{i+1}"][-1] for i in range( len( self.problema.limites.keys() ) ) ]
 
 
     def inicializarPoblacion(self):
+        print("Creacion de particulas: \n")
         for _ in range(self.nParticulas):
             while True:
                 particula = Particula(self.problema)
+                particula.x = self.problema.master_sigmoide(particula.x)
+                print(particula.x)
                 if particula.esFactible(particula.x):
                     self.enjambre.append(particula)
                     break
     
     def updateCandidatosEq(self):
         for particula in self.enjambre:
-
-            if particula.esMejorQue(self.eq_candidatos[0]):
-                self.eq_candidatos = [particula] + self.eq_candidatos[:-1]
-
-            elif particula.esMejorQue(self.eq_candidatos[1]):
-                self.eq_candidatos = [self.eq_candidatos[0], particula] + self.eq_candidatos[1:-1]
-
-            elif particula.esMejorQue(self.eq_candidatos[2]):
-                self.eq_candidatos = self.eq_candidatos[:2] + [particula] + self.eq_candidatos[2: -1]
-            
-            elif particula.esMejorQue(self.eq_candidatos[3]):
-                self.eq_candidatos[3] = particula
+            for i in range(len(self.eq_candidatos)):
+                if particula.esMejorQue(self.eq_candidatos[i]):
+                    self.eq_candidatos[i] = particula
+                    break
                 
     def construirEqPool(self):
         eqPromedio = Particula(self.problema)
         eqPromedio.x = np.mean([ candidato.x for candidato in self.eq_candidatos ], axis = 0).tolist()
+        eqPromedio.x = self.problema.master_sigmoide(eqPromedio.x)
         return self.eq_candidatos + [ eqPromedio ]
     
     def evolucion(self):
 
         for iter in range(1, self.maxIter + 1):
 
-            print(f"Iteracion no: {iter}")
+            print(f"\n Iteracion no: {iter}")
             
             self.updateCandidatosEq()
             eq_pool = self.construirEqPool()
-            for particula in eq_pool:
-                print(particula)
+
+            for i in range(5):
+                if i <= 3:
+                    print(f"Mejor particula {i + 1}: ")
+                    print(eq_pool[i])
+                else:
+                    print("Promedio: ")
+                    print(eq_pool[i])
 
             # Calcular t segun Eq. (9)
             t = (1 - iter / self.maxIter) ** ( self.a2 * iter/self.maxIter )
@@ -176,32 +225,28 @@ class EquilibriumOptimizer2:
                     # Eq. (16)
                     particula.x = eq_candidato.x + ( (particula.x - eq_candidato.x) * F )  + (G / vectorLambda) * (1 - F)
 
-                    particula.x = self.problema.sigmoideP(particula.x)
-                    print(particula.x)
-
+                    particula.x = self.problema.master_sigmoide(particula.x)
+                    
                     # np.clip
                     #particula.x = np.clip(particula.x, self.lower_band, self.upper_band)
 
-
                     if (particula.esFactible(particula.x)):
-                        print("particula era factible")
+                        #print("particula era factible")
                         break
-                
-
+    
     def solve(self):
         self.inicializarPoblacion()
         self.evolucion()
         self.updateCandidatosEq()
         mejoresParticulas = self.eq_candidatos
-        print("Mejores particulas: ")
+        print("\n\nMejores particulas: ")
         for particula in mejoresParticulas:
             print(particula)
 
-
 # Cantidad de particulas = 5
-n = 5
+n = 30
 # Numero maximo de iteraciones
-MAX_ITER = 15
+MAX_ITER = 5
 # Constantes de explotacion y explotacion
 a1 = 2
 a2 = 1
@@ -212,3 +257,4 @@ GP = 0.5
 problema = Problema()
 optimizer = EquilibriumOptimizer2(problema, n, MAX_ITER, a1, a2, GP)
 optimizer.solve()
+
