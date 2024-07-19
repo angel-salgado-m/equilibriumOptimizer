@@ -1,14 +1,11 @@
 import random
 import numpy as np
 import pandas as pd
-import scipy.special
 import matplotlib.pyplot as plt
-from rich.console import Console
-from rich.table import Table
 
 class Problema:
-  def __init__(self):
-    self.epsilon = 5000
+  def __init__(self, epsilon):
+    self.epsilon = epsilon
     self.dimensiones = 5
     self.limites = {
       'x1': (0, 15),
@@ -64,10 +61,6 @@ class Problema:
      return totalQuality
 
   def eval(self, x):
-
-    # Se evalua el fitness utilizando la nueva funcion
-    #return self.scalarazing(x)
-
     # Se evalua el fitness
     return 70 * x[0] + 91 * x[1] + 50 * x[2] + 61 * x[3] + 21 * x[4]
   
@@ -91,7 +84,7 @@ class Problema:
       (0.3, 15, 31)      
     ]
     
-    results_list = []  # Use a Python list for appending
+    results_list = []
     for x, (alpha, x0, intervals) in zip(arreglo, parameters):
         y = self.sigmoide(x, alpha, x0)
         if intervals == 5: 
@@ -110,7 +103,7 @@ class Problema:
         else:
             results_list.append(self.find_y_interval(y, intervals))
     
-    return np.array(results_list)  # Convert the list to a NumPy array before returning
+    return np.array(results_list)
   
 
 class Particula:
@@ -126,15 +119,12 @@ class Particula:
       self.x[j] = (c_min + random.random() * (c_max - c_min))
 
   def esFactible(self, x):
-    # Codigo
     return self.problema.check(self.x)
 
   def esMejorQue(self, comp):
-    # Codigo
     return self.fit() > comp.fit()
 
   def fit(self):
-    # Codigo
     return self.problema.eval(self.x)
 
   def __str__(self):
@@ -185,19 +175,9 @@ class EquilibriumOptimizer2:
     def evolucion(self):
 
         for iter in range(1, self.maxIter + 1):
-
-            print(f"\n Iteracion no: {iter}")
             
             self.updateCandidatosEq()
             eq_pool = self.construirEqPool()
-
-            for i in range(5):
-                if i <= 3:
-                    print(f"Mejor particula {i + 1}: ")
-                    print(eq_pool[i])
-                else:
-                    print("Promedio: ")
-                    print(eq_pool[i])
 
             # Calcular t segun Eq. (9)
             t = (1 - iter / self.maxIter) ** ( self.a2 * iter/self.maxIter )
@@ -226,12 +206,9 @@ class EquilibriumOptimizer2:
                     particula.x = eq_candidato.x + ( (particula.x - eq_candidato.x) * F )  + (G / vectorLambda) * (1 - F)
 
                     particula.x = self.problema.master_sigmoide(particula.x)
-                    
-                    # np.clip
-                    #particula.x = np.clip(particula.x, self.lower_band, self.upper_band)
+
 
                     if (particula.esFactible(particula.x)):
-                        #print("particula era factible")
                         break
     
     def solve(self):
@@ -243,18 +220,10 @@ class EquilibriumOptimizer2:
         for particula in mejoresParticulas:
             print(particula)
 
-# Cantidad de particulas = 5
-n = 30
-# Numero maximo de iteraciones
-MAX_ITER = 5
-# Constantes de explotacion y explotacion
+
 a1 = 2
 a2 = 1
-#
 GP = 0.5
-
-# Ejecutar el optimizador
-problema = Problema()
-optimizer = EquilibriumOptimizer2(problema, n, MAX_ITER, a1, a2, GP)
+problema = Problema(epsilon=3000)
+optimizer = EquilibriumOptimizer2(problema, 30, 5, a1, a2, GP)
 optimizer.solve()
-
