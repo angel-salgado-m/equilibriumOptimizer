@@ -207,7 +207,6 @@ class EquilibriumOptimizer2:
 
                     particula.x = self.problema.master_sigmoide(particula.x)
 
-
                     if (particula.esFactible(particula.x)):
                         break
     
@@ -220,10 +219,12 @@ class EquilibriumOptimizer2:
         for particula in mejoresParticulas:
             print(particula)
 
-
+n = 30
+maxIter = 5
 a1 = 2
 a2 = 1
 GP = 0.5
-problema = Problema(epsilon=3000)
-optimizer = EquilibriumOptimizer2(problema, 30, 5, a1, a2, GP)
+epsilon = 3000
+problema = Problema(epsilon)
+optimizer = EquilibriumOptimizer2(problema, n, maxIter, a1, a2, GP)
 optimizer.solve()

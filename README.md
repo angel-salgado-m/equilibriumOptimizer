@@ -10,17 +10,33 @@ Esta implementación se hizo con un enfoque multi-objetivo para adaptarlo a prob
 
 ### Requerimientos:
 
-Las dependencias necesarias para la ejecucion correcta de todos los archivos son las siguientes:
-* `random`:
-* `NumPy`:
-* `Pandas`:
-* `MatPlotLib`:
-* `Rich`:
-* `re`:
+Las dependencias necesarias para la ejecución correcta de todos los archivos son las siguientes:
+* `random`: Para generar opciones aleatorias y numeros aleatorios.
+* `NumPy`: Para manejo de numeros y distintos arrays.
+* `Pandas`: Para el manejo de datos y archivos `.csv`.
+* `MatPlotLib`: Para la graficación de los datos
+* `Rich`: Para personalizar la salida de los datos.
+* `re`: Para un mejor manejo de los archivos de salida.
 
-### Ejecucion de la implementacion
+### Ejecución de la implementación
 
 La implementación actual del algoritmo se encuentra en el archivo `equilibriumOptimizerV2.ipynb`.
 
-Ejecutar en orden las celdas 
+Ejecutar en orden las celdas, y ajustar parámetros para experimentar y/o replicar las ejecuciones.
 
+___
+
+Tambien se encuentra el archivo `equilibrium.py`, el cual contiene el código base de la implementación, con valores ya definidos y sin codigo de Nodo-Arco Consistencia ni análisis de datos.
+
+Los parámetros que se pueden cambiar son:
+* `a2`: Factor que afecta a la exploracion. Se tiene un valor fijo de 2
+* `a1`: Factor que afecta a la explotacion. Se tiene un valor fijo de 1
+* `GP`: Factor que equilibra la exploracion y explotacion. Valor fijo de 0.5
+* `maxIter`: Numero maximo de iteraciones
+* `n`: Cantidad de particulas a generar
+* `epsilon`: para el epsilon-constraint. Refleja el valor maximo del presupuesto.
+
+
+## Integrantes:
+* Ignacio Salinas
+* Angel Salgado
